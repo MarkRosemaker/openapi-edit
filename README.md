@@ -6,7 +6,7 @@
 </div>
 
 <p align="center">
-  <img alt="A gopher moving one luggage tag while others, connected by strings, swing into alignment" src=openapi-edit.png width=500>
+  <img alt="A gopher moving one luggage tag while others, connected by strings, swing into alignment" src=openapi-edit.jpg width=500>
 </p>
 
 <h3 align="center">
