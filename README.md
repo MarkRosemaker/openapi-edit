@@ -1,7 +1,9 @@
 <div align="center" id=badges>
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/MarkRosemaker/openapi-edit.svg)](https://pkg.go.dev/github.com/MarkRosemaker/openapi-edit)
+[![Go Report Card](https://goreportcard.com/badge/github.com/MarkRosemaker/openapi-edit)](https://goreportcard.com/report/github.com/MarkRosemaker/openapi-edit)
+![Code Coverage](https://img.shields.io/badge/coverage-86.9%25-green)
 [![License: Apache](https://img.shields.io/badge/License-Apache-yellow.svg)](./LICENSE)
-![Status](https://img.shields.io/badge/status-early-orange)
 
 </div>
 
@@ -14,9 +16,8 @@
 change where touching one place obliges you to touch several others, and forgetting
 one leaves a document that no longer resolves.
 
-> **Status: early.** The purpose and scope below are settled; the implementation is
-> being moved here operation by operation, as each one earns its place. See
-> [The openapi family](#the-openapi-family) for the modules that are ready today.
+> **Status: early.** The scope below is settled and operations arrive one at a
+> time, as each earns its place. `RenameSchema` is the first.
 
 ## Introduction
 
@@ -38,6 +39,45 @@ This module serves two kinds of caller:
   [`openapi-flatten`](https://github.com/MarkRosemaker/openapi-flatten) that run an
   algorithm over a whole specification and need the same primitives underneath.
 
+## Usage
+
+```bash
+go get github.com/MarkRosemaker/openapi-edit
+```
+
+```go
+import (
+    "github.com/MarkRosemaker/openapi"
+    edit "github.com/MarkRosemaker/openapi-edit"
+)
+
+// Renames the schema and rewrites every reference to it.
+if err := edit.RenameSchema(doc, "GetV1PetByPetIDOkJSONResponse", "Pet"); err != nil {
+    log.Fatal(err)
+}
+```
+
+The schema keeps its position among the components, so a rename produces a
+one-line change rather than reordering the section.
+
+Renaming a schema to its current name does nothing and reports no error.
+Otherwise the rename fails, **changing nothing at all**, in three cases:
+
+| Error | When |
+|---|---|
+| `ErrSchemaNotFound` | `components.schemas` has no schema under the old name |
+| `ErrSchemaExists` | the new name is already taken by another schema |
+| `ErrInvalidSchemaName` | the new name is not a valid key under `components` |
+
+The second is the interesting one. Renaming onto an existing schema would
+silently discard one of two different definitions and repoint every reference at
+whichever survived — a change that looks successful and quietly alters the API.
+
+The third matters more than validity alone suggests: a name containing `/` would
+produce a reference that resolves somewhere else entirely, and one containing a
+space would produce a reference that does not resolve at all. Component keys must
+match `^[a-zA-Z0-9.\-_]+$`.
+
 ## Scope
 
 Operations belong here when they satisfy two conditions: they **mutate** a
@@ -46,7 +86,7 @@ node being changed.
 
 **In scope**
 
-- Renaming a component and rewriting every reference to it
+- ✅ Renaming a component and rewriting every reference to it (`RenameSchema`)
 - Removing a component and reporting, or resolving, the references left behind
 - Moving a definition between inline and `components`, keeping references intact
 - Finding every location that refers to a given component
