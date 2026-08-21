@@ -2,17 +2,17 @@ module github.com/MarkRosemaker/openapi-edit
 
 go 1.27
 
-require github.com/MarkRosemaker/openapi v0.0.0-20260816160214-339f6866f4df
+require github.com/MarkRosemaker/openapi v0.0.0-20260821232459-82751aa58c4c
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	github.com/MarkRosemaker/errpath v0.0.0-20260425165607-bbd4959d04d9 // indirect
-	github.com/MarkRosemaker/json2yaml v0.0.0-20260507220148-d6cc0d01bff0 // indirect
+	github.com/MarkRosemaker/json2yaml v0.0.0-20260820194645-20aa3a7082f4 // indirect
 	github.com/MarkRosemaker/jsonutil v0.0.0-20260820212410-12ba6685df41 // indirect
-	github.com/MarkRosemaker/ordmap v0.0.0-20260813220117-99bdc4d3bc78 // indirect
-	github.com/MarkRosemaker/yaml v0.0.0-20260508005758-fe21a538b084 // indirect
-	github.com/MarkRosemaker/yaml2json v0.0.0-20260507220136-7748efc522b2 // indirect
-	github.com/go-api-libs/types v0.0.0-20251210072721-82754f56609d // indirect
-	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect
+	github.com/MarkRosemaker/ordmap v0.0.0-20260821225345-9c948bb0ea43 // indirect
+	github.com/MarkRosemaker/yaml v0.0.0-20260820194724-a126111ba94f // indirect
+	github.com/MarkRosemaker/yaml2json v0.0.0-20260820194543-4c959435803e // indirect
+	github.com/go-api-libs/types v0.0.0-20260821232109-0cf45378823e // indirect
+	golang.org/x/exp v0.0.0-20260820142414-ca536658362e // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
