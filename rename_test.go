@@ -191,7 +191,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 			ps.Properties.Set("child", r)
 			d.Paths = openapi.Paths{"/thing": {Get: &openapi.Operation{
 				Parameters: openapi.ParameterList{{Value: &openapi.Parameter{
-					Name: "q", In: openapi.ParameterLocationQuery, Schema: ps,
+					Name: "q", In: openapi.ParameterLocationQuery, Schema: &openapi.SchemaRef{Value: ps},
 				}}},
 			}}}
 
