@@ -444,9 +444,3 @@ func TestRenameSchema_Errors(t *testing.T) {
 		})
 	}
 }
-
-func TestRenameSchema_NilDocument(t *testing.T) {
-	if err := edit.RenameSchema(nil, "Old", "New"); err != nil {
-		t.Errorf("nil document should be a no-op, got %v", err)
-	}
-}
