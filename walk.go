@@ -15,7 +15,7 @@ import "github.com/MarkRosemaker/openapi"
 // This is the traversal RenameSchema uses to find every occurrence of a
 // reference; it's exported because other structural edits need the same
 // walk with a different fn, e.g. finding every reference to a schema that's
-// about to be merged into another with [MergeSchema].
+// about to be redirected onto another with [RedirectSchema].
 func WalkSchemaRefs(doc *openapi.Document, fn func(*openapi.SchemaRef)) {
 	w := &schemaRefWalker{fn: fn, visited: map[*openapi.Schema]bool{}}
 

@@ -8,9 +8,9 @@ import (
 	edit "github.com/MarkRosemaker/openapi-edit"
 )
 
-// mergeDoc builds a document with two component schemas, "Old" and "New",
+// redirectDoc builds a document with two component schemas, "Old" and "New",
 // and a "Parent" schema whose "child" property points at "Old".
-func mergeDoc() (d *openapi.Document, child *openapi.SchemaRef) {
+func redirectDoc() (d *openapi.Document, child *openapi.SchemaRef) {
 	d = &openapi.Document{
 		OpenAPI: "3.1.0",
 		Info:    &openapi.Info{Title: "test", Version: "0.0.0"},
@@ -27,11 +27,11 @@ func mergeDoc() (d *openapi.Document, child *openapi.SchemaRef) {
 	return d, child
 }
 
-func TestMergeSchema_RepointsRefsAndDeletesOld(t *testing.T) {
-	d, child := mergeDoc()
+func TestRedirectSchema_RepointsRefsAndDeletesOld(t *testing.T) {
+	d, child := redirectDoc()
 	newSchema := d.Components.Schemas["New"]
 
-	if err := edit.MergeSchema(d, "Old", "New", ""); err != nil {
+	if err := edit.RedirectSchema(d, "Old", "New", ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,10 +48,10 @@ func TestMergeSchema_RepointsRefsAndDeletesOld(t *testing.T) {
 	}
 }
 
-func TestMergeSchema_SetsDescriptionOnRepointedRefs(t *testing.T) {
-	d, child := mergeDoc()
+func TestRedirectSchema_SetsDescriptionOnRepointedRefs(t *testing.T) {
+	d, child := redirectDoc()
 
-	if err := edit.MergeSchema(d, "Old", "New", "was Old"); err != nil {
+	if err := edit.RedirectSchema(d, "Old", "New", "was Old"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -60,11 +60,11 @@ func TestMergeSchema_SetsDescriptionOnRepointedRefs(t *testing.T) {
 	}
 }
 
-func TestMergeSchema_EmptyDescriptionLeavesExistingOneAlone(t *testing.T) {
-	d, child := mergeDoc()
+func TestRedirectSchema_EmptyDescriptionLeavesExistingOneAlone(t *testing.T) {
+	d, child := redirectDoc()
 	child.Ref.Description = "already set"
 
-	if err := edit.MergeSchema(d, "Old", "New", ""); err != nil {
+	if err := edit.RedirectSchema(d, "Old", "New", ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -73,14 +73,14 @@ func TestMergeSchema_EmptyDescriptionLeavesExistingOneAlone(t *testing.T) {
 	}
 }
 
-func TestMergeSchema_LeavesOtherRefsAlone(t *testing.T) {
+func TestRedirectSchema_LeavesOtherRefsAlone(t *testing.T) {
 	const otherRef = "#/components/schemas/Other"
 
-	d, _ := mergeDoc()
+	d, _ := redirectDoc()
 	other := ref(otherRef, &openapi.Schema{Type: openapi.TypeBoolean})
 	d.Components.Schemas["Parent"].Properties.Set("other", other)
 
-	if err := edit.MergeSchema(d, "Old", "New", ""); err != nil {
+	if err := edit.RedirectSchema(d, "Old", "New", ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -89,12 +89,12 @@ func TestMergeSchema_LeavesOtherRefsAlone(t *testing.T) {
 	}
 }
 
-func TestMergeSchema_LeavesInlineSchemasAlone(t *testing.T) {
-	d, _ := mergeDoc()
+func TestRedirectSchema_LeavesInlineSchemasAlone(t *testing.T) {
+	d, _ := redirectDoc()
 	inline := &openapi.SchemaRef{Value: &openapi.Schema{Type: openapi.TypeObject}}
 	d.Components.Schemas["Parent"].Properties.Set("inline", inline)
 
-	if err := edit.MergeSchema(d, "Old", "New", "description"); err != nil {
+	if err := edit.RedirectSchema(d, "Old", "New", "description"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -103,11 +103,11 @@ func TestMergeSchema_LeavesInlineSchemasAlone(t *testing.T) {
 	}
 }
 
-func TestMergeSchema_SameName(t *testing.T) {
-	d, child := mergeDoc()
+func TestRedirectSchema_SameName(t *testing.T) {
+	d, child := redirectDoc()
 
-	if err := edit.MergeSchema(d, "Old", "Old", "description"); err != nil {
-		t.Fatalf("merging a schema into itself should do nothing, got %v", err)
+	if err := edit.RedirectSchema(d, "Old", "Old", "description"); err != nil {
+		t.Fatalf("redirecting a schema onto itself should do nothing, got %v", err)
 	}
 
 	if _, ok := d.Components.Schemas["Old"]; !ok {
@@ -123,7 +123,7 @@ func TestMergeSchema_SameName(t *testing.T) {
 	}
 }
 
-func TestMergeSchema_Errors(t *testing.T) {
+func TestRedirectSchema_Errors(t *testing.T) {
 	notFound := func(err error) bool {
 		var e *edit.ErrSchemaNotFound
 		return errors.As(err, &e)
@@ -137,9 +137,9 @@ func TestMergeSchema_Errors(t *testing.T) {
 		{name: "the new schema does not exist", old: "Old", new: "Missing"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			d, child := mergeDoc()
+			d, child := redirectDoc()
 
-			err := edit.MergeSchema(d, tc.old, tc.new, "")
+			err := edit.RedirectSchema(d, tc.old, tc.new, "")
 			if err == nil {
 				t.Fatal("expected an error")
 			}
@@ -148,7 +148,7 @@ func TestMergeSchema_Errors(t *testing.T) {
 				t.Errorf("unexpected error type %T: %v", err, err)
 			}
 
-			// A failed merge must change nothing at all.
+			// A failed redirect must change nothing at all.
 			if _, ok := d.Components.Schemas["Old"]; !ok {
 				t.Error("the old schema was removed despite the error")
 			}

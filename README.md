@@ -21,7 +21,7 @@ change where touching one place obliges you to touch several others, and forgett
 one leaves a document that no longer resolves.
 
 > **Status: early.** The scope below is settled and operations arrive one at a
-> time, as each earns its place. `RenameSchema` was the first; `MergeSchema`
+> time, as each earns its place. `RenameSchema` was the first; `RedirectSchema`
 > and the underlying `WalkSchemaRefs` traversal followed.
 
 ## Introduction
@@ -83,37 +83,59 @@ produce a reference that resolves somewhere else entirely, and one containing a
 space would produce a reference that does not resolve at all. Component keys must
 match `^[a-zA-Z0-9.\-_]+$`.
 
-### Merging two schemas
+### Redirecting a schema onto another
 
-`RenameSchema` refuses to rename a schema onto a name that already exists.
-`MergeSchema` is for when that's exactly the point — several near-duplicate
-schemas, typically ones an OpenAPI generator produced one per endpoint that
-happen to describe the same thing, are being consolidated into one:
+`RenameSchema` refuses to rename a schema onto a name that already exists
+(`ErrSchemaExists`). `RedirectSchema` is for when that's exactly the point —
+several near-duplicate schemas, typically ones an OpenAPI generator produced
+one per endpoint that happen to describe the same thing, are being
+consolidated onto one of them:
 
 ```go
 // Repoints every reference to "GetPetOkResponse" at "Pet", then removes
 // "GetPetOkResponse" from components.schemas.
-if err := edit.MergeSchema(doc, "GetPetOkResponse", "Pet", ""); err != nil {
+if err := edit.RedirectSchema(doc, "GetPetOkResponse", "Pet", ""); err != nil {
     log.Fatal(err)
 }
 ```
 
-Unlike `RenameSchema`, `Pet`'s own definition is left untouched — only the
-references that pointed at `GetPetOkResponse` move. If `GetPetOkResponse`
-carried bounds or wording worth keeping, pass it as `description` instead of
-an empty string: it becomes the `$ref`-level description on every reference
-this repoints, which is the last chance to keep that information once
-`GetPetOkResponse`'s own definition is discarded.
+**What it actually does**, precisely — this is a rewrite of references, not a
+combination of content:
 
-Merging a schema into itself does nothing and reports no error. Otherwise it
-fails, **changing nothing at all**, if either name is not in
+1. It finds every `$ref` in the document whose value is
+   `"#/components/schemas/GetPetOkResponse"` (via the same [`WalkSchemaRefs`]
+   traversal `RenameSchema` uses) and rewrites each one to
+   `"#/components/schemas/Pet"`.
+2. It deletes the `"GetPetOkResponse"` entry from `components.schemas`.
+3. It does not look at, merge, or otherwise change the *content* of either
+   schema. `Pet`'s definition (its properties, its bounds, its wording) is
+   whatever it already was, byte for byte; `GetPetOkResponse`'s definition is
+   simply gone, not folded into `Pet`'s.
+
+If `GetPetOkResponse` carried bounds or wording worth keeping, pass it as
+`description` instead of an empty string: it becomes the `$ref`-level
+`description` on every reference this repoints, replacing whatever
+description that reference already had. That's the one piece of
+`GetPetOkResponse` this function can carry forward — everything else about
+its definition is discarded the moment step 2 above runs, so this is the
+last chance to keep any of it on the sites that used it.
+
+Redirecting a schema onto itself does nothing and reports no error.
+Otherwise it fails, **changing nothing at all**, if either name is not in
 `components.schemas` (`ErrSchemaNotFound`).
 
-`MergeSchema` only repoints references — it never widens or reshapes a
-schema's own definition to cover what the other one described. Deciding
-whether two schemas are close enough to consolidate, or combining two
-independently inferred schemas into one wider shape, is out of scope here;
-see [Scope](#scope) below.
+This is deliberately *not* the same operation as combining two schemas into
+one wider shape (adding one's properties, enum values, etc. to the other) —
+that's [`openapi-merge`]'s job, and it works on two schema values directly
+rather than on a document and its references. The two are meant to compose
+at the call site rather than one wrapping the other: a caller deduplicating
+a specification decides, using whatever means it likes (`openapi-merge`
+included), which of two schemas should survive and what its content should
+be, then calls `RedirectSchema` to point every reference at the survivor and
+drop the one that lost. See [Scope](#scope) below.
+
+[`WalkSchemaRefs`]: #finding-every-reference-to-a-schema
+[`openapi-merge`]: https://github.com/MarkRosemaker/openapi-merge
 
 ### Finding every reference to a schema
 
@@ -144,8 +166,8 @@ node being changed.
 **In scope**
 
 - ✅ Renaming a component and rewriting every reference to it (`RenameSchema`)
-- ✅ Consolidating duplicate components, repointing references left behind onto
-  the survivor (`MergeSchema`)
+- ✅ Repointing every reference to a duplicate component onto the one that
+  survives, and removing the duplicate (`RedirectSchema`)
 - Moving a definition between inline and `components`, keeping references intact
 - ✅ Finding every location that refers to a given component (`WalkSchemaRefs`)
 
@@ -156,9 +178,9 @@ node being changed.
 - Combining two independently inferred schemas into one wider schema that
   covers what both described — that is
   [`openapi-merge`](https://github.com/MarkRosemaker/openapi-merge).
-  `MergeSchema` above is a different, narrower operation: it never touches a
-  schema's own definition, only the references that pointed at the one being
-  discarded.
+  `RedirectSchema` above is a different, narrower operation: it never reads
+  or changes either schema's own definition, only the references that
+  pointed at the one being discarded.
 - Whole-document policies such as flattening or deduplication — those are their own
   modules, and they are expected to *use* this one
 - Anything universal enough to belong on the types themselves — that goes into
