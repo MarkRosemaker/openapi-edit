@@ -21,8 +21,7 @@ change where touching one place obliges you to touch several others, and forgett
 one leaves a document that no longer resolves.
 
 > **Status: early.** The scope below is settled and operations arrive one at a
-> time, as each earns its place. `RenameSchema` was the first; `RedirectSchema`
-> and the underlying `WalkSchemaRefs` traversal followed.
+> time, as each earns its place. `RenameSchema` and `RedirectSchema` are the first.
 
 ## Introduction
 
@@ -103,7 +102,7 @@ if err := edit.RedirectSchema(doc, "GetPetOkResponse", "Pet", ""); err != nil {
 combination of content:
 
 1. It finds every `$ref` in the document whose value is
-   `"#/components/schemas/GetPetOkResponse"` (via the same [`WalkSchemaRefs`]
+   `"#/components/schemas/GetPetOkResponse"` (via the same [`walkSchemaRefs`]
    traversal `RenameSchema` uses) and rewrites each one to
    `"#/components/schemas/Pet"`.
 2. It deletes the `"GetPetOkResponse"` entry from `components.schemas`.
@@ -134,28 +133,7 @@ included), which of two schemas should survive and what its content should
 be, then calls `RedirectSchema` to point every reference at the survivor and
 drop the one that lost. See [Scope](#scope) below.
 
-[`WalkSchemaRefs`]: #finding-every-reference-to-a-schema
 [`openapi-merge`]: https://github.com/MarkRosemaker/openapi-merge
-
-### Finding every reference to a schema
-
-The traversal both operations above are built on is exported in its own
-right, for callers that need to find every reference to a schema without
-rewriting them:
-
-```go
-edit.WalkSchemaRefs(doc, func(r *openapi.SchemaRef) {
-    if r.Ref != nil && r.Ref.Identifier == "#/components/schemas/Pet" {
-        fmt.Println("referenced")
-    }
-})
-```
-
-It calls `fn` once per schema reference reachable from `doc` — through every
-component (schemas, responses, parameters, request bodies, headers,
-callbacks, path items) and through every path, operation, and webhook — and
-walks into a schema reached more than once only the first time, so `fn` can
-freely mutate what it's given without looping on a self-referential schema.
 
 ## Scope
 
@@ -169,7 +147,6 @@ node being changed.
 - ✅ Repointing every reference to a duplicate component onto the one that
   survives, and removing the duplicate (`RedirectSchema`)
 - Moving a definition between inline and `components`, keeping references intact
-- ✅ Finding every location that refers to a given component (`WalkSchemaRefs`)
 
 **Out of scope**
 

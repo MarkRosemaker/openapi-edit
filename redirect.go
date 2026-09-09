@@ -44,7 +44,7 @@ func RedirectSchema(doc *openapi.Document, oldName, newName, description string)
 
 	old, new := schemaRefPrefix+oldName, schemaRefPrefix+newName
 
-	WalkSchemaRefs(doc, func(r *openapi.SchemaRef) {
+	walkSchemaRefs(doc, func(r *openapi.SchemaRef) {
 		if r.Ref == nil || r.Ref.Identifier != old {
 			return
 		}
