@@ -302,6 +302,26 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 			return r
 		},
 	}, {
+		name: "a component callback",
+		build: func(d *openapi.Document) *openapi.SchemaRef {
+			r := ref(oldRef, target)
+			cbOp := &openapi.Operation{
+				RequestBody: &openapi.RequestBodyRef{Value: &openapi.RequestBody{
+					Content: openapi.Content{
+						"application/json": &openapi.MediaType{Schema: r},
+					},
+				}},
+			}
+			d.Components.Callbacks = openapi.CallbackRefs{}
+			d.Components.Callbacks.Set("Thing", &openapi.CallbackRef{
+				Value: &openapi.Callback{"{$request.body#/url}": {
+					Value: &openapi.PathItem{Post: cbOp},
+				}},
+			})
+
+			return r
+		},
+	}, {
 		name: "a component path item",
 		build: func(d *openapi.Document) *openapi.SchemaRef {
 			r := ref(oldRef, target)
