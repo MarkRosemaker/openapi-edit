@@ -7,16 +7,16 @@ github.com/MarkRosemaker/errpath
 # github.com/MarkRosemaker/json2yaml v0.0.0-20260916154521-65df36bea2fb
 ## explicit; go 1.27
 github.com/MarkRosemaker/json2yaml
-# github.com/MarkRosemaker/jsonutil v0.0.0-20260916154437-7bc46bbbdae8
+# github.com/MarkRosemaker/jsonutil v0.0.0-20260916154525-67536ebc66b1
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20260916154504-5ee8f947d122
+# github.com/MarkRosemaker/openapi v0.0.0-20260916154630-ca1c0c337ea3
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
-# github.com/MarkRosemaker/ordmap v0.0.0-20260916154447-9f90a457ba6d
+# github.com/MarkRosemaker/ordmap v0.0.0-20260916154552-37f57521038f
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
-# github.com/MarkRosemaker/yaml v0.0.0-20260916154450-3e2294ff573d
+# github.com/MarkRosemaker/yaml v0.0.0-20260916154555-7dc60e2d37ba
 ## explicit; go 1.27
 github.com/MarkRosemaker/yaml
 # github.com/MarkRosemaker/yaml2json v0.0.0-20260916154521-a16ed515e70c
