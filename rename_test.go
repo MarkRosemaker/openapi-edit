@@ -88,10 +88,8 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 	target := &openapi.Schema{Type: openapi.TypeObject}
 
 	for _, tc := range []struct {
-		name string
-		// build places a reference to the renamed schema somewhere in d, and
-		// returns the reference so the test can check it afterwards.
 		build func(d *openapi.Document) *openapi.SchemaRef
+		name  string
 	}{{
 		name: "a property of another component schema",
 		build: func(d *openapi.Document) *openapi.SchemaRef {
@@ -419,9 +417,10 @@ func TestRenameSchema_Errors(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name     string
-		old, new string
-		want     func(error) bool
+		want func(error) bool
+		name string
+		old  string
+		new  string
 	}{{
 		name: "the schema does not exist",
 		old:  "Missing", new: "New",
