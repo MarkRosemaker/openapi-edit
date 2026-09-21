@@ -127,6 +127,30 @@ func TestTrimSchemaExamples(t *testing.T) {
 	}
 }
 
+// TestTrimSchemaExamples_UnreferencedComponentSchema covers a component
+// schema nothing else in the document references: components.schemas holds
+// *openapi.Schema directly, with no enclosing SchemaRef of its own, so it
+// would never reach walkSchemaRefs' fn on its own.
+func TestTrimSchemaExamples_UnreferencedComponentSchema(t *testing.T) {
+	t.Parallel()
+
+	target := &openapi.Schema{
+		Type:    openapi.TypeInteger,
+		Example: jsontext.Value(`[1,2,3,4,5]`),
+	}
+
+	d := doc(target)
+
+	if err := edit.TrimSchemaExamples(d, 2); err != nil {
+		t.Fatal(err)
+	}
+
+	want := `[1,2]`
+	if string(target.Example) != want {
+		t.Errorf("got %s, want %s", target.Example, want)
+	}
+}
+
 func TestTrimSchemaExamples_LeavesSchemasWithoutExampleAlone(t *testing.T) {
 	t.Parallel()
 
