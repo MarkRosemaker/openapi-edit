@@ -145,6 +145,16 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 			return r
 		},
 	}, {
+		name: "a prefixItems entry",
+		build: func(d *openapi.Document) *openapi.SchemaRef {
+			r := ref(oldRef, target)
+			d.Components.Schemas.Set("Parent", &openapi.Schema{
+				Type: openapi.TypeArray, PrefixItems: openapi.SchemaRefList{r},
+			})
+
+			return r
+		},
+	}, {
 		name: "additionalProperties",
 		build: func(d *openapi.Document) *openapi.SchemaRef {
 			r := ref(oldRef, target)
@@ -299,6 +309,42 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 					"application/json": &openapi.MediaType{Schema: r},
 				},
 			}})
+
+			return r
+		},
+	}, {
+		name: "a component parameter",
+		build: func(d *openapi.Document) *openapi.SchemaRef {
+			r := ref(oldRef, target)
+			d.Components.Parameters = openapi.Parameters{}
+			d.Components.Parameters.Set("Thing", &openapi.ParameterRef{Value: &openapi.Parameter{
+				Name: "q", In: openapi.ParameterLocationQuery, Schema: r,
+			}})
+
+			return r
+		},
+	}, {
+		name: "a component request body",
+		build: func(d *openapi.Document) *openapi.SchemaRef {
+			r := ref(oldRef, target)
+			d.Components.RequestBodies = openapi.RequestBodies{}
+			d.Components.RequestBodies.Set("Thing", &openapi.RequestBodyRef{Value: &openapi.RequestBody{
+				Content: openapi.Content{
+					"application/json": &openapi.MediaType{Schema: r},
+				},
+			}})
+
+			return r
+		},
+	}, {
+		name: "a property of a component header's schema",
+		build: func(d *openapi.Document) *openapi.SchemaRef {
+			r := ref(oldRef, target)
+			hs := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+			hs.Properties.Set("child", r)
+
+			d.Components.Headers = openapi.Headers{}
+			d.Components.Headers.Set("X-Thing", &openapi.HeaderRef{Value: &openapi.Header{Schema: hs}})
 
 			return r
 		},
