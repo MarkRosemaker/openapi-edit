@@ -2,7 +2,7 @@ module github.com/MarkRosemaker/openapi-edit
 
 go 1.27
 
-require github.com/MarkRosemaker/openapi v0.0.0-20260929010759-2517f3c552ee
+require github.com/MarkRosemaker/openapi v0.0.0-20260929040129-dd68a0d980ee
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
