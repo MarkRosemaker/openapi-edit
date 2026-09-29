@@ -112,7 +112,7 @@ func TestTrimSchemaExamples(t *testing.T) {
 
 	array := &openapi.Schema{
 		Type:  openapi.TypeArray,
-		Items: &openapi.SchemaRef{Value: item},
+		Items: item,
 	}
 
 	d := doc(array)
@@ -129,8 +129,8 @@ func TestTrimSchemaExamples(t *testing.T) {
 
 // TestTrimSchemaExamples_UnreferencedComponentSchema covers a component
 // schema nothing else in the document references: components.schemas holds
-// *openapi.Schema directly, with no enclosing SchemaRef of its own, so it
-// would never reach walkSchemaRefs' fn on its own.
+// *openapi.Schema directly, and only a walk that starts from there reaches
+// it.
 func TestTrimSchemaExamples_UnreferencedComponentSchema(t *testing.T) {
 	t.Parallel()
 
@@ -163,5 +163,25 @@ func TestTrimSchemaExamples_LeavesSchemasWithoutExampleAlone(t *testing.T) {
 
 	if target.Example != nil {
 		t.Errorf("got %s, want nil", target.Example)
+	}
+}
+
+func TestTrimSchemaExamples_Examples(t *testing.T) {
+	t.Parallel()
+
+	target := &openapi.Schema{
+		Type:     openapi.TypeArray,
+		Items:    &openapi.Schema{Type: openapi.TypeInteger},
+		Examples: []jsontext.Value{jsontext.Value(`[1,2,3]`), jsontext.Value(`[4,5,6]`)},
+	}
+
+	if err := edit.TrimSchemaExamples(doc(target), 2); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, want := range []string{`[1,2]`, `[4,5]`} {
+		if got := string(target.Examples[i]); got != want {
+			t.Errorf("examples[%d] = %s, want %s", i, got, want)
+		}
 	}
 }
