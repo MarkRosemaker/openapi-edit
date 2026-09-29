@@ -171,6 +171,14 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 			return r
 		},
 	}, {
+		name: "propertyNames",
+		build: func(d *openapi.Document) *openapi.Schema {
+			r := ref(oldRef, target)
+			d.Components.Schemas.Set("Parent", &openapi.Schema{Type: openapi.TypeObject, PropertyNames: r})
+
+			return r
+		},
+	}, {
 		name: "additionalProperties",
 		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
