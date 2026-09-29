@@ -104,7 +104,8 @@ func implicitDoc(t *testing.T) *openapi.Document {
         "discriminator": {"propertyName": "kind", "mapping": {"Dog": "Dog"}}
       },
       "Vehicle": {
-        "allOf": [{"type": "object", "properties": {"kind": {"type": "string"}}}],
+        "type": "object",
+        "properties": {"kind": {"type": "string"}},
         "discriminator": {"propertyName": "kind"}
       },
       "Car": {"allOf": [{"$ref": "#/components/schemas/Vehicle"}, {"type": "object"}]},
