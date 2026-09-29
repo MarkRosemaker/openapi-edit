@@ -16,11 +16,8 @@ const (
 
 // ref builds a reference to a component schema, resolved as the loader would
 // leave it: both the reference and the schema it points at.
-func ref(identifier string, v *openapi.Schema) *openapi.SchemaRef {
-	return &openapi.SchemaRef{
-		Ref:   &openapi.Reference{Identifier: identifier},
-		Value: v,
-	}
+func ref(identifier string, v *openapi.Schema) *openapi.Schema {
+	return &openapi.Schema{Ref: &openapi.SchemaRef{Identifier: identifier, Value: v}}
 }
 
 func doc(target *openapi.Schema) *openapi.Document {
@@ -91,12 +88,12 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		name string
 		// build places a reference to the renamed schema somewhere in d, and
 		// returns the reference so the test can check it afterwards.
-		build func(d *openapi.Document) *openapi.SchemaRef
+		build func(d *openapi.Document) *openapi.Schema
 	}{{
 		name: "a property of another component schema",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
-			parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+			parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
 			parent.Properties.Set("child", r)
 			d.Components.Schemas.Set("Parent", parent)
 
@@ -104,33 +101,33 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "an allOf branch",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Schemas.Set("Parent", &openapi.Schema{
-				Type: openapi.TypeObject, AllOf: openapi.SchemaRefList{r},
+				Type: openapi.TypeObject, AllOf: openapi.SchemaList{r},
 			})
 
 			return r
 		},
 	}, {
 		name: "a oneOf branch",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
-			d.Components.Schemas.Set("Parent", &openapi.Schema{OneOf: openapi.SchemaRefList{r}})
+			d.Components.Schemas.Set("Parent", &openapi.Schema{OneOf: openapi.SchemaList{r}})
 
 			return r
 		},
 	}, {
 		name: "an anyOf branch",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
-			d.Components.Schemas.Set("Parent", &openapi.Schema{AnyOf: openapi.SchemaRefList{r}})
+			d.Components.Schemas.Set("Parent", &openapi.Schema{AnyOf: openapi.SchemaList{r}})
 
 			return r
 		},
 	}, {
 		name: "a not branch",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Schemas.Set("Parent", &openapi.Schema{Not: r})
 
@@ -138,7 +135,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "array items",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Schemas.Set("Parent", &openapi.Schema{Type: openapi.TypeArray, Items: r})
 
@@ -146,17 +143,36 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a prefixItems entry",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Schemas.Set("Parent", &openapi.Schema{
-				Type: openapi.TypeArray, PrefixItems: openapi.SchemaRefList{r},
+				Type: openapi.TypeArray, PrefixItems: openapi.SchemaList{r},
 			})
 
 			return r
 		},
 	}, {
+		name: "a reference with keywords beside it",
+		build: func(d *openapi.Document) *openapi.Schema {
+			r := ref(oldRef, target)
+			r.Description, r.Deprecated = "use something else", true
+			parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
+			parent.Properties.Set("child", r)
+			d.Components.Schemas.Set("Parent", parent)
+
+			return r
+		},
+	}, {
+		name: "a component schema that is only a reference",
+		build: func(d *openapi.Document) *openapi.Schema {
+			r := ref(oldRef, target)
+			d.Components.Schemas.Set("Alias", r)
+
+			return r
+		},
+	}, {
 		name: "additionalProperties",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Schemas.Set("Parent", &openapi.Schema{
 				Type:                 openapi.TypeObject,
@@ -167,7 +183,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a response body in an operation",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			op := &openapi.Operation{Responses: openapi.OperationResponses{}}
 			op.Responses.Set("200", &openapi.ResponseRef{Value: &openapi.Response{
@@ -182,7 +198,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a request body in an operation",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Paths = openapi.Paths{"/thing": {Post: &openapi.Operation{
 				RequestBody: &openapi.RequestBodyRef{Value: &openapi.RequestBody{
@@ -196,13 +212,13 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a property of a parameter's schema",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
-			ps := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+			ps := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
 			ps.Properties.Set("child", r)
 			d.Paths = openapi.Paths{"/thing": {Get: &openapi.Operation{
 				Parameters: openapi.ParameterList{{Value: &openapi.Parameter{
-					Name: "q", In: openapi.ParameterLocationQuery, Schema: &openapi.SchemaRef{Value: ps},
+					Name: "q", In: openapi.ParameterLocationQuery, Schema: ps,
 				}}},
 			}}}
 
@@ -210,7 +226,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a parameter shared across a path item",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Paths = openapi.Paths{"/thing": {
 				Parameters: openapi.ParameterList{{Value: &openapi.Parameter{
@@ -225,7 +241,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a response header",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			op := &openapi.Operation{Responses: openapi.OperationResponses{}}
 			op.Responses.Set("200", &openapi.ResponseRef{Value: &openapi.Response{
@@ -242,7 +258,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "an encoding header",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.RequestBodies = openapi.RequestBodies{}
 			d.Components.RequestBodies.Set("Body", &openapi.RequestBodyRef{
@@ -263,7 +279,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a callback on an operation",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			cbOp := &openapi.Operation{
 				RequestBody: &openapi.RequestBodyRef{Value: &openapi.RequestBody{
@@ -284,7 +300,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a webhook",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Webhooks = openapi.Webhooks{"onThing": {Value: &openapi.PathItem{
 				Post: &openapi.Operation{
@@ -300,7 +316,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a component response",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Responses = openapi.ResponsesByName{}
 			d.Components.Responses.Set("Thing", &openapi.ResponseRef{Value: &openapi.Response{
@@ -314,7 +330,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a component parameter",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.Parameters = openapi.Parameters{}
 			d.Components.Parameters.Set("Thing", &openapi.ParameterRef{Value: &openapi.Parameter{
@@ -325,7 +341,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a component request body",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.RequestBodies = openapi.RequestBodies{}
 			d.Components.RequestBodies.Set("Thing", &openapi.RequestBodyRef{Value: &openapi.RequestBody{
@@ -338,9 +354,9 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a property of a component header's schema",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
-			hs := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+			hs := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
 			hs.Properties.Set("child", r)
 
 			d.Components.Headers = openapi.Headers{}
@@ -350,7 +366,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a component callback",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			cbOp := &openapi.Operation{
 				RequestBody: &openapi.RequestBodyRef{Value: &openapi.RequestBody{
@@ -370,7 +386,7 @@ func TestRenameSchema_RewritesRefsEverywhere(t *testing.T) {
 		},
 	}, {
 		name: "a component path item",
-		build: func(d *openapi.Document) *openapi.SchemaRef {
+		build: func(d *openapi.Document) *openapi.Schema {
 			r := ref(oldRef, target)
 			d.Components.PathItems = openapi.PathItems{}
 			d.Components.PathItems.Set("Thing", &openapi.PathItemRef{Value: &openapi.PathItem{
@@ -408,7 +424,7 @@ func TestRenameSchema_LeavesOtherRefsAlone(t *testing.T) {
 
 	d := doc(&openapi.Schema{Type: openapi.TypeObject})
 	other := ref(otherRef, &openapi.Schema{Type: openapi.TypeString})
-	parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+	parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
 	parent.Properties.Set("other", other)
 	d.Components.Schemas.Set("Parent", parent)
 
@@ -423,7 +439,7 @@ func TestRenameSchema_LeavesOtherRefsAlone(t *testing.T) {
 
 // TestRenameSchema_Cycle: a schema referring to itself must not loop forever.
 func TestRenameSchema_Cycle(t *testing.T) {
-	target := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+	target := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
 	self := ref(oldRef, target)
 	target.Properties.Set("self", self)
 

@@ -10,7 +10,7 @@ import (
 
 // redirectDoc builds a document with two component schemas, "Old" and "New",
 // and a "Parent" schema whose "child" property points at "Old".
-func redirectDoc() (d *openapi.Document, child *openapi.SchemaRef) {
+func redirectDoc() (d *openapi.Document, child *openapi.Schema) {
 	d = &openapi.Document{
 		OpenAPI: "3.1.0",
 		Info:    &openapi.Info{Title: "test", Version: "0.0.0"},
@@ -20,7 +20,7 @@ func redirectDoc() (d *openapi.Document, child *openapi.SchemaRef) {
 	d.Components.Schemas.Set("New", &openapi.Schema{Type: openapi.TypeString})
 
 	child = ref(oldRef, d.Components.Schemas["Old"])
-	parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.SchemaRefs{}}
+	parent := &openapi.Schema{Type: openapi.TypeObject, Properties: openapi.Schemas{}}
 	parent.Properties.Set("child", child)
 	d.Components.Schemas.Set("Parent", parent)
 
@@ -46,6 +46,10 @@ func TestRedirectSchema_RepointsRefsAndDeletesOld(t *testing.T) {
 	if child.Ref.Identifier != newRef {
 		t.Errorf("reference = %q, want %q", child.Ref.Identifier, newRef)
 	}
+
+	if child.Ref.Value != newSchema {
+		t.Error("the reference still resolves to the removed schema")
+	}
 }
 
 func TestRedirectSchema_SetsDescriptionOnRepointedRefs(t *testing.T) {
@@ -55,21 +59,21 @@ func TestRedirectSchema_SetsDescriptionOnRepointedRefs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if child.Ref.Description != "was Old" {
-		t.Errorf("description = %q, want %q", child.Ref.Description, "was Old")
+	if child.Description != "was Old" {
+		t.Errorf("description = %q, want %q", child.Description, "was Old")
 	}
 }
 
 func TestRedirectSchema_EmptyDescriptionLeavesExistingOneAlone(t *testing.T) {
 	d, child := redirectDoc()
-	child.Ref.Description = "already set"
+	child.Description = "already set"
 
 	if err := edit.RedirectSchema(d, "Old", "New", ""); err != nil {
 		t.Fatal(err)
 	}
 
-	if child.Ref.Description != "already set" {
-		t.Errorf("description = %q, want it left alone", child.Ref.Description)
+	if child.Description != "already set" {
+		t.Errorf("description = %q, want it left alone", child.Description)
 	}
 }
 
@@ -91,7 +95,7 @@ func TestRedirectSchema_LeavesOtherRefsAlone(t *testing.T) {
 
 func TestRedirectSchema_LeavesInlineSchemasAlone(t *testing.T) {
 	d, _ := redirectDoc()
-	inline := &openapi.SchemaRef{Value: &openapi.Schema{Type: openapi.TypeObject}}
+	inline := &openapi.Schema{Type: openapi.TypeObject}
 	d.Components.Schemas["Parent"].Properties.Set("inline", inline)
 
 	if err := edit.RedirectSchema(d, "Old", "New", "description"); err != nil {
@@ -118,7 +122,7 @@ func TestRedirectSchema_SameName(t *testing.T) {
 		t.Error("the reference was disturbed")
 	}
 
-	if child.Ref.Description != "" {
+	if child.Description != "" {
 		t.Error("the description was set despite the no-op")
 	}
 }
