@@ -6,9 +6,10 @@ node being changed.
 
 **In scope**
 
-- ✅ Renaming a component and rewriting every reference to it (`RenameSchema`)
+- ✅ Renaming a component and rewriting every reference to it (`RenameSchema`,
+  `RenameSchemas`)
 - ✅ Repointing every reference to a duplicate component onto the one that
-  survives, and removing the duplicate (`RedirectSchema`)
+  survives, and removing the duplicate (`RedirectSchema`, `RedirectSchemas`)
 - Moving a definition between inline and `components`, keeping references intact
 
 **Out of scope**
