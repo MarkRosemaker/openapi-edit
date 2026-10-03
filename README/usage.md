@@ -35,6 +35,26 @@ produce a reference that resolves somewhere else entirely, and one containing a
 space would produce a reference that does not resolve at all. Component keys must
 match `^[a-zA-Z0-9.\-_]+$`.
 
+### Extracting inline schemas
+
+`ExtractSchema` names a schema a document spells out inline wherever it is used. It moves the schemas a
+function accepts into `components.schemas` under one name, and replaces each with a reference to it:
+
+```go
+// Every inline array of RichText becomes a reference to RichTexts.
+err := edit.ExtractSchema(doc, "RichTexts", func(s *openapi.Schema) bool {
+    return s.Type == openapi.TypeArray && s.Items != nil && s.Items.Ref != nil &&
+        s.Items.Ref.Identifier == "#/components/schemas/RichText"
+})
+```
+
+The first schema the function accepts becomes the component, so it should accept only schemas that are the
+same. A description stays where it was, on the reference, since it says what the schema is used for there.
+Schemas already in `components.schemas` are left alone.
+
+It fails, changing nothing, with `ErrSchemaExists` or `ErrInvalidSchemaName` for the name, as a rename does,
+and with `ErrNoMatch` if the function accepts no schema.
+
 ### Redirecting a schema onto another
 
 `RenameSchema` refuses to rename a schema onto a name that already exists
