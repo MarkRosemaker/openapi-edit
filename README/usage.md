@@ -142,3 +142,25 @@ be, then calls `RedirectSchema` to point every reference at the survivor and
 drop the one that lost. See [Scope](#scope) below.
 
 [`openapi-merge`]: https://github.com/MarkRosemaker/openapi-merge
+
+### Counting and describing references
+
+`CountReferences` counts the references to each component schema, wherever in
+the document they occur.
+
+`DescribeReferences` gives every reference to the named schemas a description
+beside the `$ref`, unless the reference has one of its own. A description says
+what a schema is used for in one place, so before redirecting schemas that
+describe the same shape onto one, describing the references to each keeps what
+each meant where it was used:
+
+```go
+if err := edit.DescribeReferences(doc, map[string]string{
+    "BotWorkspaceName": "The name of the bot's workspace.",
+}); err != nil {
+    log.Fatal(err)
+}
+```
+
+It fails, changing nothing, if a name is not in `components.schemas`
+(`ErrSchemaNotFound`).
