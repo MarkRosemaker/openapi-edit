@@ -118,3 +118,61 @@ func TestExtractSchema_Fails(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractSchema_FirstInDocumentOrder(t *testing.T) {
+	// what tells the matches apart comes from the first in the document, every time
+	for range 20 {
+		doc, err := openapi.LoadFromDataJSON([]byte(`{
+  "openapi": "3.1.0",
+  "info": {"title": "t", "version": "1"},
+  "components": {"schemas": {
+    "C": {"type": "object", "properties": {"x": {"type": "array", "title": "from C", "items": {"type": "string"}}}},
+    "A": {"type": "object", "properties": {"x": {"type": "array", "title": "from A", "items": {"type": "string"}}}},
+    "B": {"type": "object", "properties": {"x": {"type": "array", "title": "from B", "items": {"type": "string"}}}}
+  }}
+}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := edit.ExtractSchema(doc, "Strings", isArray); err != nil {
+			t.Fatal(err)
+		}
+
+		if got := doc.Components.Schemas["Strings"].Title; got != "from C" {
+			t.Fatalf("the component is %q, want the first in the document, from C", got)
+		}
+	}
+}
+
+func TestExtractSchema_KeepsNestedMatchesInside(t *testing.T) {
+	doc, err := openapi.LoadFromDataJSON([]byte(`{
+  "openapi": "3.1.0",
+  "info": {"title": "t", "version": "1"},
+  "components": {"schemas": {
+    "Grid": {"type": "object", "properties": {
+      "rows": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}}
+    }}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := edit.ExtractSchema(doc, "Rows", isArray); err != nil {
+		t.Fatal(err)
+	}
+
+	// the inner array is part of the outer, not a reference back to the component it is in
+	rows := doc.Components.Schemas["Rows"]
+	if rows.Items == nil || rows.Items.Ref != nil || rows.Items.Items == nil || rows.Items.Items.Type != openapi.TypeString {
+		t.Errorf("Rows is not an array of arrays of strings")
+	}
+
+	if err := doc.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// isArray accepts any array.
+func isArray(s *openapi.Schema) bool { return s.Type == openapi.TypeArray }
