@@ -12,4 +12,4 @@ change where touching one place obliges you to touch several others, and forgett
 one leaves a document that no longer resolves.
 
 > **Status: early.** The scope below is settled and operations arrive one at a
-> time, as each earns its place. `RenameSchema` and `RedirectSchema` are the first.
+> time, as each earns its place. `RenameSchema`, `RedirectSchema` and `ExtractSchema` are the first.

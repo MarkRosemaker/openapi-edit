@@ -10,9 +10,9 @@ node being changed.
   `RenameSchemas`)
 - ✅ Repointing every reference to a duplicate component onto the one that
   survives, and removing the duplicate (`RedirectSchema`, `RedirectSchemas`)
+- ✅ Moving inline definitions into `components`, replacing each with a reference (`ExtractSchema`)
 - ✅ Counting the references to each component (`CountReferences`), and
   describing them where they are used (`DescribeReferences`)
-- Moving a definition between inline and `components`, keeping references intact
 
 **Out of scope**
 
