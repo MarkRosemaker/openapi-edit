@@ -182,6 +182,26 @@ drop the one that lost. See [Scope](#scope) below.
 
 [`openapi-merge`]: https://github.com/MarkRosemaker/openapi-merge
 
+### Merging tagged unions
+
+An API that tells its objects apart by a property — `"type": "paragraph"` beside
+a `paragraph` member — is often specified as a union of one object per type.
+`MergeUnion` turns such a union into one object: the properties every variant
+has, the tag as an enum of the variants' values, and each variant's own
+properties, optional. The union may nest unions, and may be one part of an
+`allOf` whose other parts hold what every variant shares.
+
+```go
+// Every union in the document that can be merged is.
+n := edit.MergeUnions(doc, "type")
+```
+
+`MergeUnion` fails, changing nothing, if a variant is not an object, has no
+single value for the tag, or disagrees with another on a property they share;
+`MergeUnions` leaves such unions as they are. `MergeUnion` returns the component
+schemas it took in, and `RemoveUnreferenced` removes those nothing refers to
+anymore, which `MergeUnions` does itself.
+
 ### Counting and describing references
 
 `CountReferences` counts the references to each component schema, wherever in
@@ -219,6 +239,9 @@ node being changed.
 - ✅ Moving inline definitions into `components`, replacing each with a reference (`ExtractSchema`)
 - ✅ Counting the references to each component (`CountReferences`), and
   describing them where they are used (`DescribeReferences`)
+- ✅ Turning a tagged union of objects into one object, and removing the
+  variants nothing refers to anymore (`MergeUnion`, `MergeUnions`,
+  `RemoveUnreferenced`)
 
 **Out of scope**
 

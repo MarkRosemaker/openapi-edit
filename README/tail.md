@@ -13,6 +13,9 @@ node being changed.
 - ✅ Moving inline definitions into `components`, replacing each with a reference (`ExtractSchema`)
 - ✅ Counting the references to each component (`CountReferences`), and
   describing them where they are used (`DescribeReferences`)
+- ✅ Turning a tagged union of objects into one object, and removing the
+  variants nothing refers to anymore (`MergeUnion`, `MergeUnions`,
+  `RemoveUnreferenced`)
 
 **Out of scope**
 
