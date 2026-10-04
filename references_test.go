@@ -3,6 +3,7 @@ package edit_test
 import (
 	"errors"
 	"maps"
+	"strings"
 	"testing"
 
 	"github.com/MarkRosemaker/openapi"
@@ -92,5 +93,47 @@ func TestDescribeReferences_NotFound(t *testing.T) {
 
 	if toJSON(t, doc) != before {
 		t.Error("the document changed despite the error")
+	}
+}
+
+func TestRemoveUnreferenced(t *testing.T) {
+	doc, err := openapi.LoadFromDataJSON([]byte(`{
+  "openapi": "3.1.0",
+  "info": {"title": "t", "version": "1"},
+  "paths": {},
+  "components": {"schemas": {
+    "Page": {"type": "object", "properties": {"parent": {"$ref": "#/components/schemas/Parent"}}},
+    "Parent": {"type": "object"},
+    "Old": {"type": "object", "properties": {"inner": {"$ref": "#/components/schemas/Inner"}}},
+    "Inner": {"type": "object"},
+    "Pet": {
+      "oneOf": [{"$ref": "#/components/schemas/Dog"}],
+      "discriminator": {"propertyName": "kind", "mapping": {"cat": "Cat", "dog": "#/components/schemas/Dog"}}
+    },
+    "Cat": {"type": "object"},
+    "Dog": {"type": "object"},
+    "Documented": {"type": "object"}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	removed := edit.RemoveUnreferenced(doc, "Parent", "Old", "Inner", "Cat", "Page", "Missing")
+
+	// Old and Page go for nothing referring to them, then Parent and Inner for only those having referred to them
+	if got, want := strings.Join(removed, ","), "Old,Page,Parent,Inner"; got != want {
+		t.Errorf("removed %s, want %s", got, want)
+	}
+
+	// a schema a mapping names stays, as does one not in the list
+	for _, name := range []string{"Cat", "Dog", "Documented", "Pet"} {
+		if _, ok := doc.Components.Schemas[name]; !ok {
+			t.Errorf("%s was removed", name)
+		}
+	}
+
+	if err := doc.Validate(); err != nil {
+		t.Fatal(err)
 	}
 }
