@@ -167,3 +167,37 @@ func TestMergeUnions_DescriptionsDiffer(t *testing.T) {
 		t.Errorf("the merged property is described as %q, true of only one variant", d)
 	}
 }
+
+func TestMergeUnions_Untagged(t *testing.T) {
+	doc := load(t, `{"TextFilter": {"oneOf": [
+    {"type": "object", "properties": {"equals": {"type": "string"}}, "required": ["equals"]},
+    {"type": "object", "properties": {"contains": {"type": "string"}}, "required": ["contains"]},
+    {"type": "object", "properties": {"is_empty": {"type": "boolean", "const": true}}, "required": ["is_empty"]}
+  ]}}`)
+
+	if n := edit.MergeUnions(doc, ""); n != 1 {
+		t.Fatalf("merged %d unions, want 1", n)
+	}
+
+	want := `{"type":"object","properties":{"equals":{"type":"string"},"contains":{"type":"string"},` +
+		`"is_empty":{"type":"boolean","const":true}}}`
+	if got := jsonOf(t, doc.Components.Schemas["TextFilter"]); got != want {
+		t.Errorf("got  %s\nwant %s", got, want)
+	}
+}
+
+func TestMergeUnions_UntaggedReferencesStay(t *testing.T) {
+	doc := load(t, `{
+    "Result": {"anyOf": [{"$ref": "#/components/schemas/Partial"}, {"$ref": "#/components/schemas/Page"}]},
+    "Partial": {"type": "object", "properties": {"id": {"type": "string"}}},
+    "Page": {"type": "object", "properties": {"id": {"type": "string"}, "url": {"type": "string"}}}
+  }`)
+
+	if n := edit.MergeUnions(doc, ""); n != 0 {
+		t.Fatalf("merged %d unions of named types, want none", n)
+	}
+
+	if len(doc.Components.Schemas) != 3 {
+		t.Error("a named type was removed")
+	}
+}

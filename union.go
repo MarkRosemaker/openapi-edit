@@ -18,6 +18,10 @@ import (
 // references. s may instead be an allOf of objects and one such union, the objects holding what every variant shares:
 // their properties come first and stay as required as they were.
 //
+// With an empty tag, the variants are told apart by which properties they have, as a filter of one condition each:
+// the object has them all, optional unless every variant requires one. They must then be written inline, since a
+// variant that is a reference is a type in its own right, not one of a kind of object's properties.
+//
 // It returns the names of the component schemas the merge took in -- the variants, the unions within it and the
 // parts of the allOf it refers to -- for [RemoveUnreferenced] to remove once nothing refers to them anymore.
 //
@@ -36,6 +40,10 @@ func MergeUnion(s *openapi.Schema, tag string) ([]string, error) {
 
 	if len(variants) == 0 {
 		return nil, errors.New("not a union")
+	}
+
+	if tag == "" && len(merged) > 0 {
+		return nil, errors.New("a variant of a union without a tag is a reference")
 	}
 
 	m := &unionMerge{
@@ -193,12 +201,14 @@ func (m *unionMerge) addCommon(c *openapi.Schema, variants int) error {
 }
 
 func (m *unionMerge) addVariant(v *openapi.Schema) error {
-	t, ok := v.Properties[m.tag]
-	if !ok || len(t.Const) == 0 {
-		return fmt.Errorf("a variant has no single value for %s", m.tag)
-	}
+	if m.tag != "" {
+		t, ok := v.Properties[m.tag]
+		if !ok || len(t.Const) == 0 {
+			return fmt.Errorf("a variant has no single value for %s", m.tag)
+		}
 
-	m.tags = append(m.tags, t.Const)
+		m.tags = append(m.tags, t.Const)
+	}
 
 	for prop, p := range v.Properties.ByIndex() {
 		if prop == m.tag {
