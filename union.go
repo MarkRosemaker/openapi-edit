@@ -38,7 +38,10 @@ func MergeUnion(s *openapi.Schema, tag string) ([]string, error) {
 		return nil, errors.New("not a union")
 	}
 
-	m := &unionMerge{tag: tag, seen: map[string][]byte{}, shared: map[string]int{}, required: map[string]int{}}
+	m := &unionMerge{
+		tag: tag, seen: map[string][]byte{}, descs: map[string]string{}, unclear: map[string]bool{},
+		shared: map[string]int{}, required: map[string]int{},
+	}
 
 	for _, c := range common {
 		if err := m.addCommon(c, len(variants)); err != nil {
@@ -168,7 +171,9 @@ func leaves(alts openapi.SchemaList) (objects []*openapi.Schema, names []string,
 type unionMerge struct {
 	tag      string
 	tags     []jsontext.Value
-	seen     map[string][]byte // each property's JSON, to tell whether the variants agree on it
+	seen     map[string][]byte // each property's JSON without its description, to tell whether the variants agree on it
+	descs    map[string]string // each property's description
+	unclear  map[string]bool   // the properties the variants describe differently
 	shared   map[string]int    // how many variants have each property
 	required map[string]int    // how many variants require each property
 }
@@ -214,9 +219,10 @@ func (m *unionMerge) addVariant(v *openapi.Schema) error {
 	return nil
 }
 
-// see records p as the property prop, failing if another variant has it differently.
+// see records p as the property prop, failing if another variant has it differently. Variants that describe it
+// differently still agree on it, but none of their descriptions is true of the merged property.
 func (m *unionMerge) see(prop string, p *openapi.Schema) error {
-	b, err := json.Marshal(p)
+	b, err := json.Marshal(undescribed(p))
 	if err != nil {
 		return err
 	}
@@ -225,9 +231,31 @@ func (m *unionMerge) see(prop string, p *openapi.Schema) error {
 		return fmt.Errorf("the variants differ on %s", prop)
 	}
 
-	m.seen[prop] = b
+	if desc, ok := m.descs[prop]; ok && desc != p.Description {
+		m.unclear[prop] = true
+	}
+
+	m.seen[prop], m.descs[prop] = b, p.Description
 
 	return nil
+}
+
+// property is p as the merged property prop.
+func (m *unionMerge) property(prop string, p *openapi.Schema) *openapi.Schema {
+	if m.unclear[prop] {
+		return undescribed(p)
+	}
+
+	return p
+}
+
+// undescribed is a copy of p without its description.
+func undescribed(p *openapi.Schema) *openapi.Schema {
+	c := new(openapi.Schema)
+	c.Replace(p)
+	c.Description = ""
+
+	return c
 }
 
 // properties are the common parts' properties, then what every variant has, in the first one's order, with tag as
@@ -237,7 +265,7 @@ func (m *unionMerge) properties(common, variants []*openapi.Schema) openapi.Sche
 
 	for _, c := range common {
 		for prop, p := range c.Properties.ByIndex() {
-			props.Set(prop, p)
+			props.Set(prop, m.property(prop, p))
 		}
 	}
 
@@ -251,7 +279,7 @@ func (m *unionMerge) properties(common, variants []*openapi.Schema) openapi.Sche
 				case prop == m.tag:
 					props.Set(prop, &openapi.Schema{Type: openapi.TypeString, Enum: m.tags})
 				default:
-					props.Set(prop, p)
+					props.Set(prop, m.property(prop, p))
 				}
 			}
 		}

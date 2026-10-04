@@ -152,3 +152,18 @@ func TestMergeUnion_FailsWithoutChanging(t *testing.T) {
 		t.Errorf("the union changed to %s", got)
 	}
 }
+
+func TestMergeUnions_DescriptionsDiffer(t *testing.T) {
+	doc := load(t, `{"Parent": {"oneOf": [
+    {"type": "object", "properties": {"type": {"const": "database_id"}, "database_id": {"type": "string", "description": "The database."}}},
+    {"type": "object", "properties": {"type": {"const": "data_source_id"}, "database_id": {"type": "string", "description": "The data source's database."}}}
+  ]}}`)
+
+	if n := edit.MergeUnions(doc, "type"); n != 1 {
+		t.Fatalf("merged %d unions, want 1", n)
+	}
+
+	if d := doc.Components.Schemas["Parent"].Properties["database_id"].Description; d != "" {
+		t.Errorf("the merged property is described as %q, true of only one variant", d)
+	}
+}
