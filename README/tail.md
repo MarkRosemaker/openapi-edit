@@ -13,6 +13,8 @@ node being changed.
 - ✅ Moving inline definitions into `components`, replacing each with a reference (`ExtractSchema`)
 - ✅ Counting the references to each component (`CountReferences`), and
   describing them where they are used (`DescribeReferences`)
+- ✅ Removing the components an edit left without a reference
+  (`RemoveUnreferenced`)
 
 **Out of scope**
 
