@@ -15,6 +15,8 @@ node being changed.
   describing them where they are used (`DescribeReferences`)
 - ✅ Removing the components an edit left without a reference
   (`RemoveUnreferenced`)
+- ✅ Reaching every schema of a document, for a change of your own
+  (`WalkSchemas`)
 
 **Out of scope**
 
