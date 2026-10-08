@@ -4,7 +4,6 @@ import (
 	"encoding/json/jsontext"
 	"testing"
 
-	"github.com/MarkRosemaker/openapi"
 	edit "github.com/MarkRosemaker/openapi-edit"
 )
 
@@ -64,6 +63,12 @@ func TestTrimExample(t *testing.T) {
 			maxItems: 3,
 			want:     `"foo"`,
 		},
+		{
+			name:     "no budget is the default of three",
+			v:        `[1,2,3,4,5]`,
+			maxItems: 0,
+			want:     `[1,2,3]`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -80,108 +85,10 @@ func TestTrimExample(t *testing.T) {
 	}
 }
 
-func TestTrimExample_DefaultsMaxItems(t *testing.T) {
-	t.Parallel()
-
-	got, err := edit.TrimExample(jsontext.Value(`[1,2,3,4,5]`), 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	want := `[1,2,3]`
-	if string(got) != want {
-		t.Errorf("got %s, want %s", got, want)
-	}
-}
-
 func TestTrimExample_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
 	if _, err := edit.TrimExample(jsontext.Value(`{not json`), 3); err == nil {
 		t.Fatal("expected an error")
-	}
-}
-
-func TestTrimSchemaExamples(t *testing.T) {
-	t.Parallel()
-
-	item := &openapi.Schema{
-		Type:    openapi.TypeInteger,
-		Example: jsontext.Value(`[1,2,3,4,5]`),
-	}
-
-	array := &openapi.Schema{
-		Type:  openapi.TypeArray,
-		Items: item,
-	}
-
-	d := doc(array)
-
-	if err := edit.TrimSchemaExamples(d, 2); err != nil {
-		t.Fatal(err)
-	}
-
-	want := `[1,2]`
-	if string(item.Example) != want {
-		t.Errorf("got %s, want %s", item.Example, want)
-	}
-}
-
-// TestTrimSchemaExamples_UnreferencedComponentSchema covers a component
-// schema nothing else in the document references: components.schemas holds
-// *openapi.Schema directly, and only a walk that starts from there reaches
-// it.
-func TestTrimSchemaExamples_UnreferencedComponentSchema(t *testing.T) {
-	t.Parallel()
-
-	target := &openapi.Schema{
-		Type:    openapi.TypeInteger,
-		Example: jsontext.Value(`[1,2,3,4,5]`),
-	}
-
-	d := doc(target)
-
-	if err := edit.TrimSchemaExamples(d, 2); err != nil {
-		t.Fatal(err)
-	}
-
-	want := `[1,2]`
-	if string(target.Example) != want {
-		t.Errorf("got %s, want %s", target.Example, want)
-	}
-}
-
-func TestTrimSchemaExamples_LeavesSchemasWithoutExampleAlone(t *testing.T) {
-	t.Parallel()
-
-	target := &openapi.Schema{Type: openapi.TypeObject}
-	d := doc(target)
-
-	if err := edit.TrimSchemaExamples(d, 3); err != nil {
-		t.Fatal(err)
-	}
-
-	if target.Example != nil {
-		t.Errorf("got %s, want nil", target.Example)
-	}
-}
-
-func TestTrimSchemaExamples_Examples(t *testing.T) {
-	t.Parallel()
-
-	target := &openapi.Schema{
-		Type:     openapi.TypeArray,
-		Items:    &openapi.Schema{Type: openapi.TypeInteger},
-		Examples: []jsontext.Value{jsontext.Value(`[1,2,3]`), jsontext.Value(`[4,5,6]`)},
-	}
-
-	if err := edit.TrimSchemaExamples(doc(target), 2); err != nil {
-		t.Fatal(err)
-	}
-
-	for i, want := range []string{`[1,2]`, `[4,5]`} {
-		if got := string(target.Examples[i]); got != want {
-			t.Errorf("examples[%d] = %s, want %s", i, got, want)
-		}
 	}
 }

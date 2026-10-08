@@ -1,0 +1,559 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Edits",
+    "description": "TestEdit_Golden applies every edit to this document, which must then be after.json. Each group of schemas is there for one edit.",
+    "version": "1"
+  },
+  "paths": {
+    "/things/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/New"
+          }
+        }
+      ],
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Old"
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/New"
+                }
+              }
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/New"
+              },
+              "encoding": {
+                "old": {
+                  "headers": {
+                    "X-Old": {
+                      "schema": {
+                        "$ref": "#/components/schemas/New"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "a list, extracted",
+            "headers": {
+              "X-Old": {
+                "$ref": "#/components/headers/Old"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Old"
+          }
+        },
+        "callbacks": {
+          "inline": {
+            "{$request.query.url}": {
+              "post": {
+                "requestBody": {
+                  "$ref": "#/components/requestBodies/Old"
+                },
+                "responses": {
+                  "200": {
+                    "description": "ok"
+                  }
+                }
+              }
+            }
+          },
+          "referenced": {
+            "$ref": "#/components/callbacks/Old"
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "old": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/New"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Old"
+          }
+        }
+      }
+    },
+    "pathItem": {
+      "$ref": "#/components/pathItems/Old"
+    }
+  },
+  "components": {
+    "schemas": {
+      "First": {
+        "description": "Renamed onto its own name, and so left alone.",
+        "type": "string"
+      },
+      "New": {
+        "description": "Renamed to New: it keeps its place, and every reference to it follows, its own included.",
+        "type": "object",
+        "properties": {
+          "self": {
+            "$ref": "#/components/schemas/New"
+          }
+        }
+      },
+      "Last": {
+        "description": "Redirected onto itself, and so left alone.",
+        "type": "string"
+      },
+      "Everywhere": {
+        "description": "A reference to Old in each place a schema can hold one; other references stay.",
+        "type": "object",
+        "properties": {
+          "property": {
+            "description": "a reference keeps the keywords beside it",
+            "$ref": "#/components/schemas/New"
+          },
+          "allOf": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/New"
+              }
+            ]
+          },
+          "oneOf": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/New"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "anyOf": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/New"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "not": {
+            "not": {
+              "$ref": "#/components/schemas/New"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/New"
+            }
+          },
+          "prefixItems": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/New"
+              }
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/New"
+            }
+          },
+          "propertyNames": {
+            "type": "object",
+            "propertyNames": {
+              "$ref": "#/components/schemas/New"
+            }
+          },
+          "other": {
+            "$ref": "#/components/schemas/Last"
+          }
+        }
+      },
+      "Pet": {
+        "description": "Cat and Dog are renamed: a mapping value keeps its form and place, and a name that selected an alternative implicitly still does.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Kitty"
+          },
+          {
+            "$ref": "#/components/schemas/Hound"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "meow": "Kitty",
+            "woof": "#/components/schemas/Hound",
+            "Dog": "Hound",
+            "Cat": "Kitty"
+          }
+        }
+      },
+      "Kitty": {
+        "type": "object"
+      },
+      "Hound": {
+        "type": "object"
+      },
+      "Vehicle": {
+        "description": "Car, which extends it, is renamed, so the name that selected it is mapped.",
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          }
+        },
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "Car": "Automobile"
+          }
+        }
+      },
+      "Automobile": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Vehicle"
+          },
+          {
+            "type": "object"
+          }
+        ]
+      },
+      "Pair": {
+        "description": "Left and Right swap names in one rename.",
+        "type": "object",
+        "properties": {
+          "left": {
+            "$ref": "#/components/schemas/Right"
+          },
+          "right": {
+            "$ref": "#/components/schemas/Left"
+          }
+        }
+      },
+      "Right": {
+        "type": "string",
+        "enum": [
+          "left"
+        ]
+      },
+      "Left": {
+        "type": "string",
+        "enum": [
+          "right"
+        ]
+      },
+      "Original": {
+        "description": "Copy and Twin are redirected onto it.",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "Copies": {
+        "type": "object",
+        "properties": {
+          "copy": {
+            "description": "was Copy",
+            "$ref": "#/components/schemas/Original"
+          },
+          "described": {
+            "description": "was Copy",
+            "$ref": "#/components/schemas/Original"
+          },
+          "twin": {
+            "description": "kept",
+            "$ref": "#/components/schemas/Original"
+          },
+          "inline": {
+            "type": "object"
+          }
+        }
+      },
+      "Union": {
+        "description": "A oneOf of the same schema twice could never hold, so one is enough.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Original"
+          }
+        ]
+      },
+      "AnyUnion": {
+        "description": "The first stays where it was; one that says more than the schema it refers to is no duplicate.",
+        "anyOf": [
+          {
+            "description": "was Copy",
+            "$ref": "#/components/schemas/Original"
+          },
+          {
+            "$ref": "#/components/schemas/Bird"
+          },
+          {
+            "description": "was Copy",
+            "maxProperties": 1,
+            "$ref": "#/components/schemas/Original"
+          }
+        ]
+      },
+      "Untouched": {
+        "description": "A redirect only tidies what it changed.",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Bird"
+          },
+          {
+            "$ref": "#/components/schemas/Bird"
+          }
+        ]
+      },
+      "Bird": {
+        "type": "object"
+      },
+      "Shape": {
+        "description": "Copy is redirected: its mapping values follow, and its name, which selected it implicitly, is mapped.",
+        "oneOf": [
+          {
+            "description": "was Copy",
+            "$ref": "#/components/schemas/Original"
+          },
+          {
+            "$ref": "#/components/schemas/Square"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "c": "Original",
+            "Copy": "Original"
+          }
+        }
+      },
+      "Square": {
+        "type": "object"
+      },
+      "Lists": {
+        "description": "Every list but a component is extracted into one, taken from the first in the document.",
+        "type": "object",
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/List"
+          },
+          "described": {
+            "description": "kept on the reference",
+            "$ref": "#/components/schemas/List"
+          }
+        }
+      },
+      "StringList": {
+        "title": "List as a component",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "Grid": {
+        "description": "A list of lists is extracted whole: the list inside stays part of it.",
+        "type": "object",
+        "properties": {
+          "rows": {
+            "$ref": "#/components/schemas/Rows"
+          }
+        }
+      },
+      "Examples": {
+        "description": "Examples are trimmed to two items wherever they are, in a component nothing refers to too.",
+        "type": "array",
+        "items": {
+          "type": "integer"
+        },
+        "example": [
+          1,
+          2
+        ],
+        "examples": [
+          [
+            1,
+            2
+          ],
+          [
+            4,
+            5
+          ]
+        ]
+      },
+      "Page": {
+        "description": "Text is described: a reference without a description of its own gets it, the schema itself is unchanged.",
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "Where the page lives.",
+            "$ref": "#/components/schemas/Text"
+          },
+          "name": {
+            "description": "The page's own name.",
+            "$ref": "#/components/schemas/Text"
+          }
+        }
+      },
+      "Text": {
+        "description": "The name of the workspace.",
+        "type": "string"
+      },
+      "Mapped": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Square"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "named": "Named"
+          }
+        }
+      },
+      "Named": {
+        "description": "Not removed: a mapping names it.",
+        "type": "object"
+      },
+      "List": {
+        "title": "List from Lists",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "Rows": {
+        "title": "Nested",
+        "type": "array",
+        "items": {
+          "title": "Nested",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "responses": {
+      "Old": {
+        "description": "references Old",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/New"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "Old": {
+        "name": "old",
+        "in": "query",
+        "style": "form",
+        "explode": true,
+        "schema": {
+          "$ref": "#/components/schemas/New"
+        }
+      }
+    },
+    "requestBodies": {
+      "Old": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/New"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "Old": {
+        "schema": {
+          "$ref": "#/components/schemas/New"
+        }
+      }
+    },
+    "callbacks": {
+      "Old": {
+        "{$request.query.url}": {
+          "post": {
+            "requestBody": {
+              "$ref": "#/components/requestBodies/Old"
+            },
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        }
+      }
+    },
+    "pathItems": {
+      "Old": {
+        "post": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/New"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "ok"
+            }
+          }
+        }
+      }
+    }
+  }
+}
