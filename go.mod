@@ -2,13 +2,13 @@ module github.com/MarkRosemaker/openapi-edit
 
 go 1.27
 
-require github.com/MarkRosemaker/openapi v0.0.0-20261109211946-32ea4a5e2711
+require github.com/MarkRosemaker/openapi v0.0.0-20261111024415-25c3009dcfea
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	github.com/MarkRosemaker/errpath v0.0.0-20261109120451-91cd29644c73 // indirect
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8 // indirect
-	github.com/MarkRosemaker/jsonutil v0.0.0-20261109120454-26f22c55639c // indirect
+	github.com/MarkRosemaker/jsonutil v0.0.0-20261111023756-6c211037c3df // indirect
 	github.com/MarkRosemaker/ordmap v0.0.0-20261109211921-475c54164ef0 // indirect
 	github.com/MarkRosemaker/yaml v0.0.0-20261109161623-86a6a512ccb9 // indirect
 	github.com/MarkRosemaker/yaml2json v0.0.0-20261109120453-1b901dbf7e8f // indirect
