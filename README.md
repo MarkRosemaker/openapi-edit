@@ -244,7 +244,12 @@ node being changed.
   `RenameSchemas`)
 - ✅ Repointing every reference to a duplicate component onto the one that
   survives, and removing the duplicate (`RedirectSchema`, `RedirectSchemas`)
-- ✅ Moving inline definitions into `components`, replacing each with a reference (`ExtractSchema`)
+- ✅ Moving inline definitions into `components`, replacing each with a reference (`ExtractSchema`), or one
+  of them by name (`MoveToComponents`), and referring to a component (`SchemaRef`)
+- ✅ Renaming every component by a rule, such as dropping a suffix (`RenameSchemasFunc`)
+- ✅ Putting one schema in place of several near-duplicates, and every reference with it (`MergeSchemas`)
+- ✅ Undoing what generators such as FastAPI write: an optional value as an `anyOf` with null
+  (`RemoveNullAlternatives`), an empty JSON beside a download's own media type (`RemoveEmptyJSON`)
 - ✅ Counting the references to each component (`CountReferences`), and
   describing them where they are used (`DescribeReferences`)
 - ✅ Removing the components an edit left without a reference
